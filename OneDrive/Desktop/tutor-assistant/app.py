@@ -3,6 +3,7 @@ import pdfplumber
 from google import genai
 import tempfile
 import time
+import json
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
@@ -18,7 +19,47 @@ def get_client():
 client = get_client()
 MODEL_NAME = "gemini-3.1-flash-lite"
 
-# ------------------ SIDEBAR ------------------
+# ------------------ QUIZ HELPER ------------------
+def generate_quiz(source_content, source_label):
+    """Ask Gemini for 5 MCQs in JSON format based on the given content."""
+    quiz_prompt = (
+        "Create exactly 5 multiple-choice questions based on this material. "
+        "Reply with ONLY valid JSON (no markdown, no extra text), in this exact format: "
+        '[{"question": "...", "options": ["A", "B", "C", "D"], "answer": "A"}, ...] '
+        "The 'answer' field must exactly match one of the options."
+    )
+    if isinstance(source_content, str):
+        contents = f"{quiz_prompt}\n\nMaterial:\n{source_content}"
+    else:
+        contents = [source_content, quiz_prompt]
+
+    response = client.models.generate_content(model=MODEL_NAME, contents=contents)
+
+    # Gemini sometimes wraps JSON in ```json fences even when told not to — strip those out
+    raw = response.text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    return json.loads(raw)
+
+
+def show_quiz(quiz_key):
+    """Render an already-generated quiz stored in session_state, with a Check Answers button."""
+    quiz = st.session_state[quiz_key]
+    user_answers = {}
+
+    for i, q in enumerate(quiz):
+        st.markdown(f"**{i + 1}. {q['question']}**")
+        user_answers[i] = st.radio(
+            f"q{i}", q["options"], key=f"{quiz_key}_q{i}", label_visibility="collapsed"
+        )
+        st.markdown("")
+
+    if st.button("✅ Check Answers", key=f"{quiz_key}_check"):
+        score = sum(1 for i, q in enumerate(quiz) if user_answers[i] == q["answer"])
+        st.success(f"You scored {score} / {len(quiz)}")
+        for i, q in enumerate(quiz):
+            if user_answers[i] != q["answer"]:
+                st.markdown(f"❌ Q{i + 1}: Correct answer was **{q['answer']}**")
+
+
 with st.sidebar:
     st.title("📚 Tutor Assistant")
     st.caption("Your AI-powered study companion")
@@ -112,6 +153,18 @@ with tab1:
                 st.markdown(reply.text)
             st.session_state["pdf_messages"].append({"role": "assistant", "content": reply.text})
 
+    # ---------- QUIZ FROM PDF ----------
+    if pdf_file is not None and st.session_state.get("pdf_text", "").strip():
+        st.markdown("---")
+        st.subheader("📝 Test Yourself")
+
+        if st.button("Generate a Quiz from this PDF"):
+            with st.spinner("Writing quiz questions..."):
+                st.session_state["pdf_quiz"] = generate_quiz(st.session_state["pdf_text"], "PDF")
+
+        if st.session_state.get("pdf_quiz"):
+            show_quiz("pdf_quiz")
+
 # ================== VIDEO TAB ==================
 with tab2:
     col1, col2 = st.columns([1, 1], gap="large")
@@ -187,3 +240,15 @@ with tab2:
                     reply = st.session_state["video_chat"].send_message(video_question)
                 st.markdown(reply.text)
             st.session_state["video_messages"].append({"role": "assistant", "content": reply.text})
+
+    # ---------- QUIZ FROM VIDEO ----------
+    if video_file is not None and st.session_state.get("uploaded_video") is not None:
+        st.markdown("---")
+        st.subheader("📝 Test Yourself")
+
+        if st.button("Generate a Quiz from this Video"):
+            with st.spinner("Writing quiz questions..."):
+                st.session_state["video_quiz"] = generate_quiz(st.session_state["uploaded_video"], "Video")
+
+        if st.session_state.get("video_quiz"):
+            show_quiz("video_quiz")
