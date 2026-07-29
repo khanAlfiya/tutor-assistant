@@ -28,6 +28,11 @@ st.markdown("""
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
+        font-size: 1.05rem;
+    }
+    p, li, .stMarkdown {
+        font-size: 1.05rem;
+        line-height: 1.6;
     }
     h1, h2, h3, .hero-banner h1 {
         font-family: 'Poppins', sans-serif;
@@ -401,7 +406,9 @@ with tab2:
 
     if video_file is not None:
         st.success(f"✅ {video_file.name}")
-        st.video(video_file)
+        video_col, _ = st.columns([2, 1])
+        with video_col:
+            st.video(video_file)
 
     st.markdown("---")
     st.subheader("Transcript & Summary")
