@@ -28,11 +28,13 @@ st.markdown("""
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
-        font-size: 1.05rem;
+        font-size: 17px !important;
     }
-    p, li, .stMarkdown {
-        font-size: 1.05rem;
-        line-height: 1.6;
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li,
+    [data-testid="stText"] {
+        font-size: 1.08rem !important;
+        line-height: 1.65 !important;
     }
     h1, h2, h3, .hero-banner h1 {
         font-family: 'Poppins', sans-serif;
