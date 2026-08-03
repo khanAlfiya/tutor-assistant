@@ -28,7 +28,7 @@ st.markdown("""
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
-        font-size: 16px !important;
+        font-size: 19px !important;
     }
     [data-testid="stMarkdownContainer"] p,
     [data-testid="stMarkdownContainer"] li,
@@ -40,8 +40,8 @@ st.markdown("""
     [data-testid="stChatMessageContent"] p,
     .stTextInput input,
     .stTextArea textarea {
-        font-size: 1rem !important;
-        line-height: 1.55 !important;
+        font-size: 1.15rem !important;
+        line-height: 1.6 !important;
     }
     h1, h2, h3, .hero-banner h1 {
         font-family: 'Poppins', sans-serif;
